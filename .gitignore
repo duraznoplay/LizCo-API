@@ -1,0 +1,32 @@
+node_modules/
+dist/
+coverage/
+.turbo/
+.vscode/
+.idea/
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env
+.env
+.env.local
+.env.*.local
+.jwe-keys.local.env
+.jwe-pub.json
+.jwe-priv.json
+
+# Prisma
+prisma/.env
+
+# Tests
+test-results/
+*.lcov
