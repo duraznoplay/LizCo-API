@@ -32,7 +32,7 @@ export class PackagesAdminRepository {
 
     let q = this.supabase.client
       .schema(ENTERPRISE_TOURS_SCHEMA)
-      .from('packages')
+      .from('backoffice_packages')
       .select('*', { count: 'exact' })
       .order('created_at', { ascending: false })
       .range(from, to)
@@ -51,7 +51,7 @@ export class PackagesAdminRepository {
   async findById(id: string): Promise<TourPackage | null> {
     const { data, error } = await this.supabase.client
       .schema(ENTERPRISE_TOURS_SCHEMA)
-      .from('packages')
+      .from('backoffice_packages')
       .select('*')
       .eq('id', id)
       .maybeSingle()
@@ -63,7 +63,7 @@ export class PackagesAdminRepository {
   async create(dto: CreatePackageDto): Promise<TourPackage> {
     const { data, error } = await this.supabase.client
       .schema(ENTERPRISE_TOURS_SCHEMA)
-      .from('packages')
+      .from('backoffice_packages')
       .insert(dto)
       .select()
       .single()
@@ -75,7 +75,7 @@ export class PackagesAdminRepository {
   async update(id: string, dto: UpdatePackageDto): Promise<TourPackage | null> {
     const { data, error } = await this.supabase.client
       .schema(ENTERPRISE_TOURS_SCHEMA)
-      .from('packages')
+      .from('backoffice_packages')
       .update({ ...dto, updated_at: new Date().toISOString() })
       .eq('id', id)
       .select()
@@ -88,7 +88,7 @@ export class PackagesAdminRepository {
   async delete(id: string): Promise<void> {
     const { error } = await this.supabase.client
       .schema(ENTERPRISE_TOURS_SCHEMA)
-      .from('packages')
+      .from('backoffice_packages')
       .delete()
       .eq('id', id)
 

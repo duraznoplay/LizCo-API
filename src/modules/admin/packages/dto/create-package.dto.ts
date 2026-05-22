@@ -20,4 +20,9 @@ export class CreatePackageDto {
   @IsArray()
   @IsString({ each: true })
   features?: string[]
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  image?: string
 }

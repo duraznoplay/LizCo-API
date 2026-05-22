@@ -2,7 +2,6 @@ import { Transform } from 'class-transformer'
 import {
   IsOptional,
   IsString,
-  IsUrl,
   Matches,
   MaxLength,
   MinLength,
@@ -26,7 +25,7 @@ export class CreateBlogPostDto {
   slug?: string
 
   @IsOptional()
-  @IsUrl({}, { message: 'image must be a valid URL' })
+  @IsString()
   @MaxLength(500)
   image?: string
 }

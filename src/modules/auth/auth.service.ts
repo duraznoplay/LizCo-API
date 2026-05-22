@@ -15,7 +15,6 @@ export class AuthService {
 
     const accessToken = this.jwt.sign(payload, {
       secret: this.config.getOrThrow<string>('JWT_ADMIN_SECRET'),
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       expiresIn: (this.config.get<string>('JWT_ADMIN_EXPIRES_IN') ?? '8h') as any,
       issuer: 'lizco-backoffice',
       audience: 'lizco-admin',
