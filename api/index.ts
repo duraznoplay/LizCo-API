@@ -12,9 +12,14 @@ let cachedApp: Express | null = null
 
 async function createApp(): Promise<Express> {
   const server = express()
+  // Pre-attach body parsers so NestJS's isMiddlewareApplied check (which calls
+  // app.get('router') and throws on Express 4) is never triggered.
+  server.use(express.json({ limit: '10mb' }))
+  server.use(express.urlencoded({ extended: true, limit: '10mb' }))
+
   const app = await NestFactory.create(AppModule, new ExpressAdapter(server), {
     bufferLogs: false,
-    rawBody: true,
+    bodyParser: false,
   })
 
   app.use(
