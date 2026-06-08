@@ -10,6 +10,7 @@ export interface TourPackage {
   description: string
   price: number
   features: string[] | null
+  image: string | null
   created_at: string
   updated_at: string
 }

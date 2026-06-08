@@ -22,7 +22,7 @@ describe('PackagesAdminService', () => {
 
   describe('findById', () => {
     it('returns the package when found', async () => {
-      const pkg = { id: 'abc', title: 'Test', price: 100, description: 'desc', features: null, created_at: '', updated_at: '' }
+      const pkg = { id: 'abc', title: 'Test', price: 100, description: 'desc', features: null, image: null, created_at: '', updated_at: '' }
       repo.findById.mockResolvedValue(pkg)
       await expect(service.findById('abc')).resolves.toEqual(pkg)
     })
@@ -35,7 +35,7 @@ describe('PackagesAdminService', () => {
 
   describe('create', () => {
     it('delegates to repo.create and returns the result', async () => {
-      const pkg = { id: 'new', title: 'Pkg', price: 50, description: 'long desc', features: ['f1'], created_at: '', updated_at: '' }
+      const pkg = { id: 'new', title: 'Pkg', price: 50, description: 'long desc', features: ['f1'], image: null, created_at: '', updated_at: '' }
       repo.create.mockResolvedValue(pkg)
       const result = await service.create({ title: 'Pkg', description: 'long desc', price: 50, features: ['f1'] })
       expect(repo.create).toHaveBeenCalledTimes(1)
@@ -51,14 +51,14 @@ describe('PackagesAdminService', () => {
     })
 
     it('throws NotFoundException when update returns null (race condition)', async () => {
-      const pkg = { id: 'abc', title: 'T', price: 10, description: 'd', features: null, created_at: '', updated_at: '' }
+      const pkg = { id: 'abc', title: 'T', price: 10, description: 'd', features: null, image: null, created_at: '', updated_at: '' }
       repo.findById.mockResolvedValue(pkg)
       repo.update.mockResolvedValue(null)
       await expect(service.update('abc', { price: 20 })).rejects.toThrow(NotFoundException)
     })
 
     it('returns updated package on success', async () => {
-      const pkg = { id: 'abc', title: 'T', price: 10, description: 'd', features: null, created_at: '', updated_at: '' }
+      const pkg = { id: 'abc', title: 'T', price: 10, description: 'd', features: null, image: null, created_at: '', updated_at: '' }
       const updated = { ...pkg, price: 20 }
       repo.findById.mockResolvedValue(pkg)
       repo.update.mockResolvedValue(updated)
@@ -74,7 +74,7 @@ describe('PackagesAdminService', () => {
     })
 
     it('calls repo.delete when package exists', async () => {
-      const pkg = { id: 'abc', title: 'T', price: 10, description: 'd', features: null, created_at: '', updated_at: '' }
+      const pkg = { id: 'abc', title: 'T', price: 10, description: 'd', features: null, image: null, created_at: '', updated_at: '' }
       repo.findById.mockResolvedValue(pkg)
       repo.delete.mockResolvedValue(undefined)
       await expect(service.delete('abc')).resolves.toBeUndefined()
