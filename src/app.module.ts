@@ -4,7 +4,7 @@ import { APP_FILTER, APP_GUARD } from '@nestjs/core'
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler'
 import { LoggerModule } from 'nestjs-pino'
 
-import { AuthModule } from './auth/auth.module'
+import { SupabaseAuthModule } from './auth/auth.module'
 import { BackofficeAuthModule } from './modules/auth/auth.module'
 import { BlogAdminModule } from './modules/admin/blog/blog-admin.module'
 import { PackagesAdminModule } from './modules/admin/packages/packages-admin.module'
@@ -49,7 +49,7 @@ import { SupabaseModule } from './supabase/supabase.module'
     }),
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 120 }]),
     CryptoModule,
-    AuthModule,
+    SupabaseAuthModule,
     SupabaseModule,
     HealthModule,
     CatalogModule,

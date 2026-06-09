@@ -21,7 +21,7 @@ export class CatalogRepository {
     const { data, error } = await this.supa.client
       .schema(ENTERPRISE_TOURS_SCHEMA)
       .from('destinations')
-      .select('name, slug, description')
+      .select('id, name, slug')
       .eq('is_active', true)
       .order('name', { ascending: true })
     if (error) throw new Error(error.message)
