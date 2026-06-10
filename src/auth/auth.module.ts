@@ -1,9 +1,9 @@
 import { Global, Module } from '@nestjs/common'
-import { SupabaseJwtGuard } from './supabase-jwt.guard'
+import { SupabaseJwtGuard } from '../common/guards/supabase-jwt.guard'
 
 @Global()
 @Module({
   providers: [SupabaseJwtGuard],
   exports: [SupabaseJwtGuard],
 })
-export class AuthModule {}
+export class SupabaseAuthModule {}

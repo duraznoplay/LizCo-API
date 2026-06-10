@@ -32,6 +32,7 @@ describe('LocalStrategy', () => {
         },
       ],
     }).compile()
+    await module.init()
     strategy = module.get<LocalStrategy>(LocalStrategy)
   })
 

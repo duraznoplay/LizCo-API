@@ -8,13 +8,20 @@ import type { IncomingMessage, ServerResponse } from 'http'
 import { AppModule } from '../src/app.module'
 import { SanitizedExceptionFilter } from '../src/common/filters/sanitized-exception.filter'
 
-let cachedApp: Express | null = null
+let appPromise: Promise<Express> | null = null
 
 async function createApp(): Promise<Express> {
   const server = express()
   // Pre-attach body parsers so NestJS's isMiddlewareApplied check (which calls
   // app.get('router') and throws on Express 4) is never triggered.
-  server.use(express.json({ limit: '10mb' }))
+  server.use(
+    express.json({
+      limit: '10mb',
+      verify: (req: any, _res, buf) => {
+        req.rawBody = buf
+      },
+    }),
+  )
   server.use(express.urlencoded({ extended: true, limit: '10mb' }))
 
   const app = await NestFactory.create(AppModule, new ExpressAdapter(server), {
@@ -51,6 +58,12 @@ async function createApp(): Promise<Express> {
 }
 
 export default async function handler(req: IncomingMessage, res: ServerResponse) {
-  cachedApp = cachedApp ?? await createApp()
-  cachedApp(req, res)
+  if (!appPromise) {
+    appPromise = createApp().catch((err) => {
+      appPromise = null
+      throw err
+    })
+  }
+  const app = await appPromise
+  app(req, res)
 }

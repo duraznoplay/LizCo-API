@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common'
 import { ENTERPRISE_TOURS_SCHEMA, SupabaseAdminService } from '../../../supabase/supabase-admin.service'
 import type { BlogQueryDto } from './dto/blog-query.dto'
+import { pgError } from '../../../common/utils/pg-error'
+import type { BlogAdminRow, BlogAdminListItem } from '@/types/db.types'
 
 const TABLE = 'blogs'
 
@@ -12,7 +14,9 @@ export class BlogAdminRepository {
     return this.supabase.client.schema(ENTERPRISE_TOURS_SCHEMA).from(TABLE)
   }
 
-  async findAll(query: BlogQueryDto) {
+  async findAll(
+    query: BlogQueryDto,
+  ): Promise<{ items: BlogAdminListItem[]; total: number; page: number; limit: number }> {
     const { page, limit, search } = query
     const from = (page - 1) * limit
 
@@ -24,38 +28,41 @@ export class BlogAdminRepository {
     if (search) builder = builder.ilike('title', `%${search}%`)
 
     const { data, error, count } = await builder
-    if (error) throw new Error(error.message)
-    return { items: data ?? [], total: count ?? 0, page, limit }
+    if (error) throw pgError(error)
+    return { items: (data ?? []) as BlogAdminListItem[], total: count ?? 0, page, limit }
   }
 
-  async findById(id: string) {
+  async findById(id: string): Promise<BlogAdminRow | null> {
     const { data, error } = await this.client.select('*').eq('id', id).maybeSingle()
-    if (error) throw new Error(error.message)
-    return data ?? null
+    if (error) throw pgError(error)
+    return (data as BlogAdminRow | null) ?? null
   }
 
   async existsBySlug(slug: string, excludeId?: string): Promise<boolean> {
     let builder = this.client.select('id', { head: true, count: 'exact' }).eq('slug', slug)
     if (excludeId) builder = builder.neq('id', excludeId)
     const { count, error } = await builder
-    if (error) throw new Error(error.message)
+    if (error) throw pgError(error)
     return (count ?? 0) > 0
   }
 
-  async create(data: { title: string; slug: string; content: string; image?: string }) {
+  async create(data: { title: string; slug: string; content: string; image?: string }): Promise<BlogAdminRow> {
     const { data: row, error } = await this.client.insert(data).select().single()
-    if (error) throw new Error(error.message)
-    return row
+    if (error) throw pgError(error)
+    return row as BlogAdminRow
   }
 
-  async update(id: string, data: Partial<{ title: string; slug: string; content: string; image: string }>) {
-    const { data: row, error } = await this.client.update(data).eq('id', id).select().single()
-    if (error) throw new Error(error.message)
-    return row
+  async update(
+    id: string,
+    data: Partial<{ title: string; slug: string; content: string; image: string }>,
+  ): Promise<BlogAdminRow | null> {
+    const { data: row, error } = await this.client.update(data).eq('id', id).select().maybeSingle()
+    if (error) throw pgError(error)
+    return (row as BlogAdminRow | null) ?? null
   }
 
   async delete(id: string) {
     const { error } = await this.client.delete().eq('id', id)
-    if (error) throw new Error(error.message)
+    if (error) throw pgError(error)
   }
 }

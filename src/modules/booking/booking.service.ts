@@ -116,27 +116,30 @@ export class BookingService {
     const durationDays = Math.max(1, Number(pkg.duration_days) || 4)
     const addOnsUsd = computeAddOnsUsdSelected(addOnRows, selectedMap, travelerCount, durationDays)
     const totalUsd = Math.round((tourUsd + addOnsUsd) * 100) / 100
-    const phone = body.guestPhone?.trim() ? body.guestPhone.trim() : null
+    const phone = body.guestPhone?.trim() || null
 
-    const existing = await this.repo.findCustomerByEmail(body.guestEmail.trim().toLowerCase())
-    let customerId: string
-    if (existing) {
-      customerId = existing.id
-      await this.repo.updateCustomer(customerId, {
-        first_name: body.guestFirstName.trim(),
-        last_name: body.guestLastName.trim(),
-        phone,
-      })
-    } else {
-      customerId = await this.repo.insertCustomer({
-        first_name: body.guestFirstName.trim(),
-        last_name: body.guestLastName.trim(),
-        email: body.guestEmail.trim().toLowerCase(),
-        phone,
-      })
-    }
+    const customerId = await this.repo.upsertCustomer({
+      first_name: body.guestFirstName.trim(),
+      last_name: body.guestLastName.trim(),
+      email: body.guestEmail.trim().toLowerCase(),
+      phone,
+    })
 
-    const bookingId = await this.repo.insertBooking({
+    const selectedAddOns = addOnRows
+      .filter((row) => selectedSet.has(row.id))
+      .map((row) => {
+        let calculated = 0
+        if (row.type === 'PER_BOOKING') calculated = row.price
+        else if (row.type === 'PER_PERSON') calculated = row.price * travelerCount
+        else if (row.type === 'PER_DAY') calculated = row.price * durationDays
+        return {
+          id: row.id,
+          quantity: 1,
+          price: Math.round(calculated * 100) / 100,
+        }
+      })
+
+    const bookingId = await this.repo.createBookingWithAddOns({
       package_id: pkg.id,
       customer_id: customerId,
       travel_date: ymd,
@@ -144,22 +147,8 @@ export class BookingService {
       base_price_applied: basePrice,
       season_multiplier_applied: multiplier,
       total_calculated_price: totalUsd,
+      addOns: selectedAddOns,
     })
-
-    for (const row of addOnRows) {
-      if (!selectedSet.has(row.id)) continue
-      let calculated = 0
-      if (row.type === 'PER_BOOKING') calculated = row.price
-      else if (row.type === 'PER_PERSON') calculated = row.price * travelerCount
-      else if (row.type === 'PER_DAY') calculated = row.price * durationDays
-      calculated = Math.round(calculated * 100) / 100
-      await this.repo.insertBookingAddOn({
-        booking_id: bookingId,
-        add_on_id: row.id,
-        quantity: 1,
-        calculated_price: calculated,
-      })
-    }
 
     return { ok: true as const, bookingId, totalUsd }
   }

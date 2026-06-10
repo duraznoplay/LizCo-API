@@ -2,7 +2,7 @@ import { createParamDecorator, ExecutionContext } from '@nestjs/common'
 
 export type RequestUser = {
   id: string
-  role: string
+  role: 'ADMIN' | 'STAFF'
   email?: string
 }
 

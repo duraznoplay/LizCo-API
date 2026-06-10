@@ -5,25 +5,30 @@ import {
 } from '../../supabase/supabase-admin.service'
 
 import type { AddOnRow } from './domain/entities/add-on.entity'
+import type {
+  DestinationRow,
+  PackageListRow,
+  PackageIdRow,
+  BlogPublicListItem,
+  BlogPublicDetail,
+} from '@/types/db.types'
 
 @Injectable()
 export class CatalogRepository {
   constructor(private readonly supa: SupabaseAdminService) {}
 
-  async listDestinations(): Promise<
-    { name: string; slug: string; description: string | null }[]
-  > {
+  async listDestinations(): Promise<DestinationRow[]> {
     const { data, error } = await this.supa.client
       .schema(ENTERPRISE_TOURS_SCHEMA)
       .from('destinations')
-      .select('name, slug, description')
+      .select('id, name, slug')
       .eq('is_active', true)
       .order('name', { ascending: true })
     if (error) throw new Error(error.message)
-    return (data ?? []) as { name: string; slug: string; description: string | null }[]
+    return (data ?? []) as DestinationRow[]
   }
 
-  async listPackages(): Promise<unknown[]> {
+  async listPackages(): Promise<PackageListRow[]> {
     const { data, error } = await this.supa.client
       .schema(ENTERPRISE_TOURS_SCHEMA)
       .from('packages')
@@ -31,7 +36,7 @@ export class CatalogRepository {
       .eq('is_active', true)
       .order('name', { ascending: true })
     if (error) throw new Error(error.message)
-    return data ?? []
+    return (data ?? []) as PackageListRow[]
   }
 
   async listAddOnsForPackageSlug(packageSlug: string): Promise<AddOnRow[]> {
@@ -44,11 +49,13 @@ export class CatalogRepository {
     if (pe) throw new Error(pe.message)
     if (!pkg) return []
 
+    const pkgId = (pkg as PackageIdRow).id
+
     const junction = await this.supa.client
       .schema(ENTERPRISE_TOURS_SCHEMA)
       .from('package_add_ons')
       .select('add_ons ( id, name, type, price, is_active )')
-      .eq('package_id', (pkg as { id: string }).id)
+      .eq('package_id', pkgId)
 
     if (!junction.error && junction.data?.length) {
       return this.flattenEmbeddedAddOns(junction.data as unknown as { add_ons: AddOnRow | AddOnRow[] | null }[])
@@ -58,7 +65,7 @@ export class CatalogRepository {
       .schema(ENTERPRISE_TOURS_SCHEMA)
       .from('add_ons')
       .select('id, name, type, price, is_active')
-      .eq('package_id', (pkg as { id: string }).id)
+      .eq('package_id', pkgId)
       .eq('is_active', true)
       .order('name', { ascending: true })
 
@@ -77,9 +84,7 @@ export class CatalogRepository {
     return (data as AddOnRow[]) ?? []
   }
 
-  async listBlogs(): Promise<
-    { slug: string; title: string; excerpt: string | null; published_at: string | null }[]
-  > {
+  async listBlogs(): Promise<BlogPublicListItem[]> {
     const { data, error } = await this.supa.client
       .schema(ENTERPRISE_TOURS_SCHEMA)
       .from('blogs')
@@ -87,17 +92,10 @@ export class CatalogRepository {
       .eq('is_active', true)
       .order('published_at', { ascending: false })
     if (error) throw new Error(error.message)
-    return (data ?? []) as {
-      slug: string
-      title: string
-      excerpt: string | null
-      published_at: string | null
-    }[]
+    return (data ?? []) as BlogPublicListItem[]
   }
 
-  async blogBySlug(
-    slug: string,
-  ): Promise<{ slug: string; title: string; excerpt: string | null; body: string; published_at: string | null } | null> {
+  async blogBySlug(slug: string): Promise<BlogPublicDetail | null> {
     const { data, error } = await this.supa.client
       .schema(ENTERPRISE_TOURS_SCHEMA)
       .from('blogs')
@@ -106,13 +104,7 @@ export class CatalogRepository {
       .eq('is_active', true)
       .maybeSingle()
     if (error) throw new Error(error.message)
-    return (data as {
-      slug: string
-      title: string
-      excerpt: string | null
-      body: string
-      published_at: string | null
-    } | null) ?? null
+    return (data as BlogPublicDetail | null) ?? null
   }
 
   private flattenEmbeddedAddOns(rows: { add_ons: AddOnRow | AddOnRow[] | null }[]): AddOnRow[] {
