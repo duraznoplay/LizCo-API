@@ -8,6 +8,7 @@ import {
 import { Reflector } from '@nestjs/core'
 import type { Request } from 'express'
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator'
+import { SKIP_REQUEST_TOKEN_KEY } from '../decorators/skip-request-token.decorator'
 import { RequestTokenService, type RequestTokenClaims } from '../../crypto/request-token.service'
 
 type ReqWithRaw = Request & { rawBody?: Buffer; requestToken?: RequestTokenClaims }
@@ -27,6 +28,12 @@ export class RequestTokenGuard implements CanActivate {
       ctx.getClass(),
     ])
     if (isPublic) return true
+
+    const skipRequestToken = this.reflector.getAllAndOverride<boolean>(SKIP_REQUEST_TOKEN_KEY, [
+      ctx.getHandler(),
+      ctx.getClass(),
+    ])
+    if (skipRequestToken) return true
 
     const req = ctx.switchToHttp().getRequest<ReqWithRaw>()
     const tokenHeader = req.headers['x-lizco-request-token']

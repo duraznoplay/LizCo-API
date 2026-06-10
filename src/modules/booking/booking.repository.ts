@@ -45,46 +45,41 @@ export class BookingRepository {
     return total
   }
 
-  async findCustomerByEmail(email: string): Promise<{ id: string } | null> {
-    const { data, error } = await this.supa.client
-      .schema(ENTERPRISE_TOURS_SCHEMA)
-      .from('customers')
-      .select('id')
-      .eq('email', email)
-      .maybeSingle()
-    if (error) throw new Error(error.message)
-    return (data as { id: string } | null) ?? null
-  }
-
-  async insertCustomer(input: {
+  async upsertCustomer(input: {
     first_name: string
     last_name: string
     email: string
     phone: string | null
   }): Promise<string> {
-    const { data, error } = await this.supa.client
+    // INSERT new customers (sets lead_source for attribution). On email conflict fall through.
+    const { data: newRow, error: insertErr } = await this.supa.client
       .schema(ENTERPRISE_TOURS_SCHEMA)
       .from('customers')
       .insert({ ...input, lead_source: 'lizco_global_tours_web' })
       .select('id')
-      .single()
-    if (error || !data) throw new Error(error?.message ?? 'customer_insert_failed')
-    return (data as { id: string }).id
-  }
+      .maybeSingle()
 
-  async updateCustomer(
-    id: string,
-    patch: { first_name: string; last_name: string; phone?: string | null },
-  ): Promise<void> {
-    const { error } = await this.supa.client
+    if (newRow) return (newRow as { id: string }).id
+
+    // Any error other than a unique violation is unexpected.
+    if (insertErr?.code !== '23505') {
+      throw new Error(insertErr?.message ?? 'customer_insert_failed')
+    }
+
+    // Returning customer — update contact fields only, preserving original lead_source.
+    const { data: existing, error: updateErr } = await this.supa.client
       .schema(ENTERPRISE_TOURS_SCHEMA)
       .from('customers')
-      .update(patch)
-      .eq('id', id)
-    if (error) throw new Error(error.message)
+      .update({ first_name: input.first_name, last_name: input.last_name, phone: input.phone })
+      .eq('email', input.email)
+      .select('id')
+      .single()
+
+    if (updateErr || !existing) throw new Error(updateErr?.message ?? 'customer_upsert_failed')
+    return (existing as { id: string }).id
   }
 
-  async insertBooking(input: {
+  async createBookingWithAddOns(input: {
     package_id: string
     customer_id: string
     travel_date: string
@@ -92,31 +87,23 @@ export class BookingRepository {
     base_price_applied: number
     season_multiplier_applied: number
     total_calculated_price: number
+    addOns: { id: string; quantity: number; price: number }[]
   }): Promise<string> {
     const { data, error } = await this.supa.client
-      .schema(ENTERPRISE_TOURS_SCHEMA)
-      .from('bookings')
-      .insert({
-        ...input,
-        status: 'PENDING',
-        lead_source: 'lizco_global_tours_web',
+      .schema(POSTGREST_PUBLIC_SCHEMA)
+      .rpc('lizco_create_booking', {
+        p_package_id:       input.package_id,
+        p_customer_id:      input.customer_id,
+        p_travel_date:      input.travel_date,
+        p_travelers_count:  input.travelers_count,
+        p_base_price:       input.base_price_applied,
+        p_multiplier:       input.season_multiplier_applied,
+        p_total_price:      input.total_calculated_price,
+        p_addon_ids:        input.addOns.map((a) => a.id),
+        p_addon_quantities: input.addOns.map((a) => a.quantity),
+        p_addon_prices:     input.addOns.map((a) => a.price),
       })
-      .select('id')
-      .single()
-    if (error || !data) throw new Error(error?.message ?? 'booking_insert_failed')
-    return (data as { id: string }).id
-  }
-
-  async insertBookingAddOn(input: {
-    booking_id: string
-    add_on_id: string
-    quantity: number
-    calculated_price: number
-  }): Promise<void> {
-    const { error } = await this.supa.client
-      .schema(ENTERPRISE_TOURS_SCHEMA)
-      .from('booking_add_ons')
-      .insert(input)
-    if (error) throw new Error(error.message)
+    if (error || !data) throw new Error(error?.message ?? 'booking_create_failed')
+    return data as string
   }
 }

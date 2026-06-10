@@ -1,4 +1,4 @@
-import { ConflictException, NotFoundException } from '@nestjs/common'
+import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common'
 import { BlogAdminRepository } from './blog-admin.repository'
 import { BlogAdminService } from './blog-admin.service'
 
@@ -50,6 +50,16 @@ describe('BlogAdminService', () => {
       expect(repo.create).not.toHaveBeenCalled()
     })
 
+    it('converts UNIQUE DB violation into ConflictException (TOCTOU race)', async () => {
+      repo.existsBySlug.mockResolvedValue(false)
+      repo.create.mockRejectedValue(
+        new Error('duplicate key value violates unique constraint "blogs_slug_key"'),
+      )
+
+      await expect(service.create({ title: 'Race', content: LONG_CONTENT }))
+        .rejects.toThrow(ConflictException)
+    })
+
     it('strips diacritics in auto-generated slug', async () => {
       repo.existsBySlug.mockResolvedValue(false)
       repo.create.mockResolvedValue({ id: '1', slug: 'diversión' } as never)
@@ -64,7 +74,7 @@ describe('BlogAdminService', () => {
 
   describe('findById', () => {
     it('returns post when found', async () => {
-      const post = { id: '1', title: 'Post', slug: 'post', content: 'c', image: null, author: 'LizCo', created_at: '' }
+      const post = { id: '1', title: 'Post', slug: 'post', content: 'c', image: null, author: 'LizCo', created_at: '', updated_at: '' }
       repo.findById.mockResolvedValue(post)
       await expect(service.findById('1')).resolves.toEqual(post)
     })
@@ -76,11 +86,18 @@ describe('BlogAdminService', () => {
   })
 
   describe('update', () => {
-    const existing = { id: '1', title: 'Old Title', slug: 'old-title', content: 'c', image: null, author: 'LizCo', created_at: '' }
+    const existing = { id: '1', title: 'Old Title', slug: 'old-title', content: 'c', image: null, author: 'LizCo', created_at: '', updated_at: '' }
 
     it('throws NotFoundException when post does not exist', async () => {
       repo.findById.mockResolvedValue(null)
       await expect(service.update('missing', { title: 'New' })).rejects.toThrow(NotFoundException)
+      expect(repo.update).not.toHaveBeenCalled()
+    })
+
+    it('throws BadRequestException when DTO has no recognized fields', async () => {
+      repo.findById.mockResolvedValue(existing)
+
+      await expect(service.update('1', {})).rejects.toThrow(BadRequestException)
       expect(repo.update).not.toHaveBeenCalled()
     })
 
@@ -94,15 +111,13 @@ describe('BlogAdminService', () => {
       expect(repo.update).toHaveBeenCalledWith('1', expect.objectContaining({ slug: 'new-title' }))
     })
 
-    it('keeps existing slug when new auto-slug would collide', async () => {
+    it('throws ConflictException when auto-generated slug is already taken (supply explicit slug to resolve)', async () => {
       repo.findById.mockResolvedValue(existing)
       repo.existsBySlug.mockResolvedValue(true) // new slug taken
-      repo.update.mockResolvedValue(existing as never)
 
-      await service.update('1', { title: 'New Title' })
-
-      const updateCall = repo.update.mock.calls[0][1]
-      expect(updateCall).not.toHaveProperty('slug')
+      await expect(service.update('1', { title: 'New Title' }))
+        .rejects.toThrow(ConflictException)
+      expect(repo.update).not.toHaveBeenCalled()
     })
 
     it('validates explicit slug uniqueness (throws ConflictException if taken by another)', async () => {
@@ -112,6 +127,38 @@ describe('BlogAdminService', () => {
       await expect(service.update('1', { slug: 'taken-slug' }))
         .rejects.toThrow(ConflictException)
       expect(repo.update).not.toHaveBeenCalled()
+    })
+
+    it('converts UNIQUE DB violation into ConflictException during update — explicit slug (TOCTOU race)', async () => {
+      repo.findById.mockResolvedValue(existing)
+      repo.existsBySlug.mockResolvedValue(false)
+      repo.update.mockRejectedValue(
+        new Error('duplicate key value violates unique constraint "blogs_slug_key"'),
+      )
+
+      await expect(service.update('1', { slug: 'race-slug' }))
+        .rejects.toThrow(ConflictException)
+    })
+
+    it('converts UNIQUE DB violation into ConflictException during update — auto-slug from title (TOCTOU race)', async () => {
+      repo.findById.mockResolvedValue(existing)
+      repo.existsBySlug.mockResolvedValue(false)  // auto-slug appears free
+      repo.update.mockRejectedValue(
+        new Error('duplicate key value violates unique constraint "blogs_slug_key"'),
+      )
+
+      // title change triggers auto-slug path; concurrent insert beats us to the DB
+      await expect(service.update('1', { title: 'Concurrent Title' }))
+        .rejects.toThrow(ConflictException)
+    })
+
+    it('throws NotFoundException when post deleted between findById and repo.update (TOCTOU delete)', async () => {
+      repo.findById.mockResolvedValue(existing)
+      repo.existsBySlug.mockResolvedValue(false)
+      repo.update.mockResolvedValue(null as never)  // 0 rows matched — deleted
+
+      await expect(service.update('1', { title: 'Too Late' }))
+        .rejects.toThrow(NotFoundException)
     })
   })
 
@@ -123,7 +170,7 @@ describe('BlogAdminService', () => {
     })
 
     it('calls repo.delete when post exists', async () => {
-      const post = { id: '1', title: 'P', slug: 'p', content: 'c', image: null, author: 'LizCo', created_at: '' }
+      const post = { id: '1', title: 'P', slug: 'p', content: 'c', image: null, author: 'LizCo', created_at: '', updated_at: '' }
       repo.findById.mockResolvedValue(post)
       repo.delete.mockResolvedValue(undefined)
 

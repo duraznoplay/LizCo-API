@@ -2,6 +2,7 @@ import { Transform } from 'class-transformer'
 import {
   IsOptional,
   IsString,
+  IsUrl,
   Matches,
   MaxLength,
   MinLength,
@@ -25,7 +26,10 @@ export class CreateBlogPostDto {
   slug?: string
 
   @IsOptional()
-  @IsString()
+  @IsUrl(
+    { protocols: ['http', 'https'], require_protocol: true },
+    { message: 'image must be a valid http or https URL' },
+  )
   @MaxLength(500)
   image?: string
 }
