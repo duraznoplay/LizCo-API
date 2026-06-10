@@ -1,12 +1,12 @@
 {
   "version": 2,
-  "buildCommand": "yarn install && yarn build",
   "builds": [
     {
       "src": "api/index.ts",
       "use": "@vercel/node",
       "config": {
-        "includeFiles": ["dist/**", "src/**"]
+        "includeFiles": ["dist/**", "src/**"],
+        "excludeFiles": ["node_modules/**"]
       }
     }
   ],
