@@ -6,8 +6,8 @@
       "src": "api/index.ts",
       "use": "@vercel/node",
       "config": {
-        "includeFiles": ["dist/**", "src/**"],
-        "excludeFiles": ["node_modules/**"]
+        "includeFiles": ["dist/**", "src/**", "node_modules/**"],
+        "excludeFiles": []
       }
     }
   ],
