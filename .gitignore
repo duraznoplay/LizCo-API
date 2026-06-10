@@ -1,5 +1,5 @@
 node_modules/
-dist/
+# dist/  — Temporarily committed for Vercel deployment. Should be excluded after fixing buildCommand.
 coverage/
 .turbo/
 .vscode/
