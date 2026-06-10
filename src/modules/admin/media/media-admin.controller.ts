@@ -127,7 +127,7 @@ export class MediaAdminController {
 
   @Post()
   async create(
-    @Body(new ZodValidationPipe(createMediaSchema)) body: CreateMediaDto,
+    @Body(new ZodValidationPipe(createMediaSchema)) _body: CreateMediaDto,
   ): Promise<MediaDetailDto> {
     // This endpoint is called AFTER the file is uploaded to S3 via presigned URL
     // The frontend will provide the S3 key (path where file was uploaded)
