@@ -1,24 +1,21 @@
-import 'reflect-metadata'
-import { NestFactory } from '@nestjs/core'
-import { ExpressAdapter } from '@nestjs/platform-express'
-import { ValidationPipe } from '@nestjs/common'
-import helmet from 'helmet'
-import express, { type Express } from 'express'
-import type { IncomingMessage, ServerResponse } from 'http'
-import { AppModule } from '../dist/app.module'
-import { SanitizedExceptionFilter } from '../dist/common/filters/sanitized-exception.filter'
+require('reflect-metadata')
+const express = require('express')
+const helmet = require('helmet')
 
-// Force Vercel redeploy - cache bust
-let appPromise: Promise<Express> | null = null
+let appPromise = null
 
-async function createApp(): Promise<Express> {
+async function createApp() {
+  const { NestFactory } = require('@nestjs/core')
+  const { ExpressAdapter } = require('@nestjs/platform-express')
+  const { ValidationPipe } = require('@nestjs/common')
+  const { AppModule } = require('../dist/app.module')
+  const { SanitizedExceptionFilter } = require('../dist/common/filters/sanitized-exception.filter')
+
   const server = express()
-  // Pre-attach body parsers so NestJS's isMiddlewareApplied check (which calls
-  // app.get('router') and throws on Express 4) is never triggered.
   server.use(
     express.json({
       limit: '10mb',
-      verify: (req: any, _res, buf) => {
+      verify: (req, _res, buf) => {
         req.rawBody = buf
       },
     }),
@@ -58,7 +55,7 @@ async function createApp(): Promise<Express> {
   return server
 }
 
-export default async function handler(req: IncomingMessage, res: ServerResponse) {
+module.exports = async function handler(req, res) {
   if (!appPromise) {
     appPromise = createApp().catch((err) => {
       appPromise = null
