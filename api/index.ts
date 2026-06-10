@@ -5,8 +5,8 @@ import { ValidationPipe } from '@nestjs/common'
 import helmet from 'helmet'
 import express, { type Express } from 'express'
 import type { IncomingMessage, ServerResponse } from 'http'
-import { AppModule } from '../src/app.module'
-import { SanitizedExceptionFilter } from '../src/common/filters/sanitized-exception.filter'
+import { AppModule } from '../dist/app.module'
+import { SanitizedExceptionFilter } from '../dist/common/filters/sanitized-exception.filter'
 
 // Force Vercel redeploy - cache bust
 let appPromise: Promise<Express> | null = null
