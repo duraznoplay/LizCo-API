@@ -8,6 +8,7 @@ import type { IncomingMessage, ServerResponse } from 'http'
 import { AppModule } from '../src/app.module'
 import { SanitizedExceptionFilter } from '../src/common/filters/sanitized-exception.filter'
 
+// Force Vercel redeploy - cache bust
 let appPromise: Promise<Express> | null = null
 
 async function createApp(): Promise<Express> {
