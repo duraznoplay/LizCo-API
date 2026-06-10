@@ -1,13 +1,16 @@
 require('reflect-metadata')
-require('tsconfig-paths').register({
-  baseUrl: './dist',
-  paths: {
-    '@/*': ['*'],
-  },
-})
 
+const path = require('path')
 const express = require('express')
 const helmet = require('helmet')
+
+// Register path aliases for compiled modules
+require('tsconfig-paths').register({
+  baseUrl: path.join(__dirname, '../dist'),
+  paths: {
+    '@/*': ['./*'],
+  },
+})
 
 let appPromise = null
 
@@ -15,8 +18,8 @@ async function createApp() {
   const { NestFactory } = require('@nestjs/core')
   const { ExpressAdapter } = require('@nestjs/platform-express')
   const { ValidationPipe } = require('@nestjs/common')
-  const { AppModule } = require('@/app.module')
-  const { SanitizedExceptionFilter } = require('@/common/filters/sanitized-exception.filter')
+  const { AppModule } = require('../dist/app.module')
+  const { SanitizedExceptionFilter } = require('../dist/common/filters/sanitized-exception.filter')
 
   const server = express()
   server.use(
