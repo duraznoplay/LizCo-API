@@ -12,10 +12,17 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.BlogQueryDto = void 0;
 const class_transformer_1 = require("class-transformer");
 const class_validator_1 = require("class-validator");
+const blog_status_enum_1 = require("./blog-status.enum");
 class BlogQueryDto {
     page = 1;
     limit = 20;
     search;
+    status;
+    startDate;
+    endDate;
+    featured;
+    sort = 'created_at';
+    order = 'desc';
 }
 exports.BlogQueryDto = BlogQueryDto;
 __decorate([
@@ -38,4 +45,39 @@ __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], BlogQueryDto.prototype, "search", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsEnum)(blog_status_enum_1.BlogStatus, { message: 'status must be draft, published, or archived' }),
+    __metadata("design:type", String)
+], BlogQueryDto.prototype, "status", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], BlogQueryDto.prototype, "startDate", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], BlogQueryDto.prototype, "endDate", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Type)(() => Boolean),
+    (0, class_validator_1.IsBoolean)(),
+    __metadata("design:type", Boolean)
+], BlogQueryDto.prototype, "featured", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsEnum)(['created_at', 'updated_at', 'title', 'reading_time_minutes'], {
+        message: 'sort must be created_at, updated_at, title, or reading_time_minutes',
+    }),
+    __metadata("design:type", String)
+], BlogQueryDto.prototype, "sort", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsEnum)(['asc', 'desc'], { message: 'order must be asc or desc' }),
+    __metadata("design:type", String)
+], BlogQueryDto.prototype, "order", void 0);
 //# sourceMappingURL=blog-query.dto.js.map

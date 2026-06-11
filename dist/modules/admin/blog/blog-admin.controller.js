@@ -17,6 +17,7 @@ const common_1 = require("@nestjs/common");
 const jwt_admin_guard_1 = require("../../../common/guards/jwt-admin.guard");
 const roles_guard_1 = require("../../../common/guards/roles.guard");
 const roles_decorator_1 = require("../../../common/decorators/roles.decorator");
+const current_user_decorator_1 = require("../../../common/decorators/current-user.decorator");
 const blog_admin_service_1 = require("./blog-admin.service");
 const blog_query_dto_1 = require("./dto/blog-query.dto");
 const create_blog_post_dto_1 = require("./dto/create-blog-post.dto");
@@ -26,23 +27,54 @@ let BlogAdminController = class BlogAdminController {
     constructor(service) {
         this.service = service;
     }
+    async stats() {
+        const counts = await this.service.getStats();
+        return {
+            total: counts.draft + counts.published + counts.archived,
+            draft: counts.draft,
+            published: counts.published,
+            archived: counts.archived,
+        };
+    }
     findAll(q) {
         return this.service.findAll(q);
     }
     findById(id) {
         return this.service.findById(id);
     }
-    create(dto) {
-        return this.service.create(dto);
+    create(dto, user) {
+        return this.service.create(dto, user?.id);
     }
-    update(id, dto) {
-        return this.service.update(id, dto);
+    async bulkPublish(body) {
+        return this.service.bulkPublish(body.ids);
+    }
+    async bulkArchive(body) {
+        return this.service.bulkArchive(body.ids);
+    }
+    update(id, dto, user) {
+        return this.service.update(id, dto, user?.id);
+    }
+    async publish(id, user) {
+        return this.service.publish(id, user?.id);
+    }
+    async archive(id, user) {
+        return this.service.archive(id, user?.id);
+    }
+    async restore(id) {
+        return this.service.restore(id);
     }
     async remove(id) {
         await this.service.delete(id);
     }
 };
 exports.BlogAdminController = BlogAdminController;
+__decorate([
+    (0, common_1.Get)('stats'),
+    (0, roles_decorator_1.Roles)('ADMIN', 'STAFF'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], BlogAdminController.prototype, "stats", null);
 __decorate([
     (0, common_1.Get)(),
     (0, roles_decorator_1.Roles)('ADMIN', 'STAFF'),
@@ -64,19 +96,63 @@ __decorate([
     (0, common_1.HttpCode)(201),
     (0, roles_decorator_1.Roles)('ADMIN'),
     __param(0, (0, common_1.Body)()),
+    __param(1, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [create_blog_post_dto_1.CreateBlogPostDto]),
+    __metadata("design:paramtypes", [create_blog_post_dto_1.CreateBlogPostDto, Object]),
     __metadata("design:returntype", void 0)
 ], BlogAdminController.prototype, "create", null);
+__decorate([
+    (0, common_1.Post)('bulk/publish'),
+    (0, roles_decorator_1.Roles)('ADMIN'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], BlogAdminController.prototype, "bulkPublish", null);
+__decorate([
+    (0, common_1.Post)('bulk/archive'),
+    (0, roles_decorator_1.Roles)('ADMIN'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], BlogAdminController.prototype, "bulkArchive", null);
 __decorate([
     (0, common_1.Patch)(':id'),
     (0, roles_decorator_1.Roles)('ADMIN'),
     __param(0, (0, common_1.Param)('id', common_1.ParseUUIDPipe)),
     __param(1, (0, common_1.Body)()),
+    __param(2, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, update_blog_post_dto_1.UpdateBlogPostDto]),
+    __metadata("design:paramtypes", [String, update_blog_post_dto_1.UpdateBlogPostDto, Object]),
     __metadata("design:returntype", void 0)
 ], BlogAdminController.prototype, "update", null);
+__decorate([
+    (0, common_1.Post)(':id/publish'),
+    (0, roles_decorator_1.Roles)('ADMIN'),
+    __param(0, (0, common_1.Param)('id', common_1.ParseUUIDPipe)),
+    __param(1, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
+], BlogAdminController.prototype, "publish", null);
+__decorate([
+    (0, common_1.Post)(':id/archive'),
+    (0, roles_decorator_1.Roles)('ADMIN'),
+    __param(0, (0, common_1.Param)('id', common_1.ParseUUIDPipe)),
+    __param(1, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
+], BlogAdminController.prototype, "archive", null);
+__decorate([
+    (0, common_1.Post)(':id/restore'),
+    (0, roles_decorator_1.Roles)('ADMIN'),
+    __param(0, (0, common_1.Param)('id', common_1.ParseUUIDPipe)),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], BlogAdminController.prototype, "restore", null);
 __decorate([
     (0, common_1.Delete)(':id'),
     (0, common_1.HttpCode)(204),

@@ -14,6 +14,8 @@ const common_1 = require("@nestjs/common");
 const pg_error_1 = require("../../../common/utils/pg-error");
 const blog_admin_repository_1 = require("./blog-admin.repository");
 const slug_util_1 = require("./utils/slug.util");
+const reading_time_util_1 = require("./utils/reading-time.util");
+const blog_status_enum_1 = require("./dto/blog-status.enum");
 let BlogAdminService = class BlogAdminService {
     repo;
     constructor(repo) {
@@ -28,11 +30,29 @@ let BlogAdminService = class BlogAdminService {
             throw new common_1.NotFoundException(`Blog post ${id} not found`);
         return post;
     }
-    async create(dto) {
+    async findBySlug(slug) {
+        const post = await this.repo.findBySlug(slug);
+        if (!post)
+            throw new common_1.NotFoundException(`Blog post ${slug} not found`);
+        return post;
+    }
+    async create(dto, userId) {
         const slug = dto.slug ?? (0, slug_util_1.generateSlug)(dto.title);
         await this.assertSlugAvailable(slug);
+        const readingTime = (0, reading_time_util_1.calculateReadingTime)(dto.content);
         try {
-            return await this.repo.create({ title: dto.title, slug, content: dto.content, image: dto.image });
+            return await this.repo.create({
+                title: dto.title,
+                slug,
+                content: dto.content,
+                image: dto.image,
+                status: dto.status ?? blog_status_enum_1.BlogStatus.DRAFT,
+                meta_description: dto.meta_description,
+                meta_keywords: dto.meta_keywords,
+                featured: dto.featured ?? false,
+                reading_time_minutes: readingTime,
+                created_by: userId,
+            });
         }
         catch (err) {
             if ((0, pg_error_1.isUniqueViolation)(err))
@@ -40,15 +60,27 @@ let BlogAdminService = class BlogAdminService {
             throw err;
         }
     }
-    async update(id, dto) {
-        await this.findById(id);
+    async update(id, dto, _userId) {
+        const existing = await this.findById(id);
         const payload = {};
         if (dto.title !== undefined)
             payload.title = dto.title;
-        if (dto.content !== undefined)
-            payload.content = dto.content;
         if (dto.image !== undefined)
             payload.image = dto.image;
+        if (dto.status !== undefined) {
+            this.validateStatusTransition(existing.status, dto.status);
+            payload.status = dto.status;
+        }
+        if (dto.meta_description !== undefined)
+            payload.meta_description = dto.meta_description;
+        if (dto.meta_keywords !== undefined)
+            payload.meta_keywords = dto.meta_keywords;
+        if (dto.featured !== undefined)
+            payload.featured = dto.featured;
+        if (dto.content !== undefined) {
+            payload.content = dto.content;
+            payload.reading_time_minutes = (0, reading_time_util_1.calculateReadingTime)(dto.content);
+        }
         if (dto.slug !== undefined) {
             await this.assertSlugAvailable(dto.slug, id);
             payload.slug = dto.slug;
@@ -79,6 +111,52 @@ let BlogAdminService = class BlogAdminService {
     async delete(id) {
         await this.findById(id);
         await this.repo.delete(id);
+    }
+    async restore(id) {
+        const post = await this.repo.restore(id);
+        if (!post)
+            throw new common_1.NotFoundException(`Blog post ${id} not found`);
+        return post;
+    }
+    async publish(id, userId) {
+        return this.transitionStatus(id, blog_status_enum_1.BlogStatus.PUBLISHED, userId);
+    }
+    async archive(id, userId) {
+        return this.transitionStatus(id, blog_status_enum_1.BlogStatus.ARCHIVED, userId);
+    }
+    async transitionStatus(id, newStatus, _userId) {
+        const existing = await this.findById(id);
+        this.validateStatusTransition(existing.status, newStatus);
+        const updated = await this.repo.update(id, { status: newStatus });
+        if (!updated)
+            throw new common_1.NotFoundException(`Blog post ${id} not found`);
+        return updated;
+    }
+    async bulkPublish(ids) {
+        if (!ids.length)
+            throw new common_1.BadRequestException('ids must not be empty');
+        await this.repo.bulkUpdateStatus(ids, blog_status_enum_1.BlogStatus.PUBLISHED);
+        return { success: true, count: ids.length };
+    }
+    async bulkArchive(ids) {
+        if (!ids.length)
+            throw new common_1.BadRequestException('ids must not be empty');
+        await this.repo.bulkUpdateStatus(ids, blog_status_enum_1.BlogStatus.ARCHIVED);
+        return { success: true, count: ids.length };
+    }
+    async getStats() {
+        return this.repo.countByStatus();
+    }
+    validateStatusTransition(currentStatus, newStatus) {
+        const validTransitions = {
+            [blog_status_enum_1.BlogStatus.DRAFT]: [blog_status_enum_1.BlogStatus.PUBLISHED, blog_status_enum_1.BlogStatus.ARCHIVED],
+            [blog_status_enum_1.BlogStatus.PUBLISHED]: [blog_status_enum_1.BlogStatus.ARCHIVED, blog_status_enum_1.BlogStatus.DRAFT],
+            [blog_status_enum_1.BlogStatus.ARCHIVED]: [blog_status_enum_1.BlogStatus.DRAFT, blog_status_enum_1.BlogStatus.PUBLISHED],
+        };
+        const allowed = validTransitions[currentStatus];
+        if (!allowed.includes(newStatus)) {
+            throw new common_1.BadRequestException(`Cannot transition from ${currentStatus} to ${newStatus}. Allowed transitions: ${allowed.join(', ')}`);
+        }
     }
     async assertSlugAvailable(slug, excludeId) {
         const exists = await this.repo.existsBySlug(slug, excludeId);
