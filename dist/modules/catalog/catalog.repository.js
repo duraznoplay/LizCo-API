@@ -75,7 +75,6 @@ let CatalogRepository = class CatalogRepository {
             .schema(supabase_admin_service_1.ENTERPRISE_TOURS_SCHEMA)
             .from('add_ons')
             .select('id, name, type, price, is_active')
-            .eq('is_active', true)
             .order('name', { ascending: true });
         if (error)
             throw new Error(error.message);
@@ -103,6 +102,61 @@ let CatalogRepository = class CatalogRepository {
         if (error)
             throw new Error(error.message);
         return data ?? null;
+    }
+    async createAddOn(dto) {
+        const { data, error } = await this.supa.client
+            .schema(supabase_admin_service_1.ENTERPRISE_TOURS_SCHEMA)
+            .from('add_ons')
+            .insert([dto])
+            .select('id, name, type, price, is_active')
+            .single();
+        if (error)
+            throw new Error(error.message);
+        return data;
+    }
+    async updateAddOn(id, dto) {
+        const { data, error } = await this.supa.client
+            .schema(supabase_admin_service_1.ENTERPRISE_TOURS_SCHEMA)
+            .from('add_ons')
+            .update(dto)
+            .eq('id', id)
+            .select('id, name, type, price, is_active')
+            .single();
+        if (error)
+            throw new Error(error.message);
+        return data;
+    }
+    async deleteAddOn(id) {
+        const { error } = await this.supa.client
+            .schema(supabase_admin_service_1.ENTERPRISE_TOURS_SCHEMA)
+            .from('add_ons')
+            .delete()
+            .eq('id', id);
+        if (error)
+            throw new Error(error.message);
+    }
+    async getAddOnDependencies(id) {
+        const { data, error } = await this.supa.client
+            .schema(supabase_admin_service_1.ENTERPRISE_TOURS_SCHEMA)
+            .from('package_add_ons')
+            .select('packages(id, name, slug)')
+            .eq('add_on_id', id);
+        if (error)
+            throw new Error(error.message);
+        const packages = [];
+        if (data && Array.isArray(data)) {
+            for (const row of data) {
+                const pkg = row.packages;
+                if (pkg && !Array.isArray(pkg)) {
+                    packages.push({
+                        id: pkg.id,
+                        name: pkg.name,
+                        slug: pkg.slug,
+                    });
+                }
+            }
+        }
+        return packages;
     }
     flattenEmbeddedAddOns(rows) {
         const out = [];
