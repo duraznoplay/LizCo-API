@@ -100,7 +100,7 @@ export class BookingService {
     }
 
     if (pkg.pricing_model === 'hotel_based') {
-      let row = null
+      let row
       if (sel.departureId) {
         row = await this.repo.hotelDepartureById(sel.departureId)
       } else if (sel.hotelId && sel.date) {
@@ -134,7 +134,7 @@ export class BookingService {
     }
 
     // hotel_season (Medellín): temporada × noches × hotel
-    let row = null
+    let row
     if (sel.departureId) {
       row = await this.repo.medellinCellById(sel.departureId)
     } else if (sel.hotelId && sel.nights && sel.season) {
