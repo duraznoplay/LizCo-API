@@ -294,7 +294,33 @@ export class BookingService {
         }
       })
 
-    const bookingId = await this.repo.createBooking({
+    let bookingId: string
+    try {
+      bookingId = await this.repo.createBooking(this.buildBookingRow(body, pkg, resolved, childrenAges, totalUsd, depositDue, addonsSnapshot, phone))
+    } catch (e) {
+      // Trigger fn_trg_update_inventory (0034): cupos insuficientes
+      if (e instanceof Error && e.message.includes('no_availability')) {
+        throw new ConflictException('no_availability')
+      }
+      throw e
+    }
+
+    await this.repo.insertBookingAddons(bookingId, addonsSnapshot)
+
+    return { ok: true as const, bookingId, totalUsd, depositUsd: depositDue }
+  }
+
+  private buildBookingRow(
+    body: BookingSubmitRequestDto,
+    pkg: PackageRow,
+    resolved: ResolvedDeparture,
+    childrenAges: number[],
+    totalUsd: number,
+    depositDue: number | null,
+    addonsSnapshot: { id: string; name: string; quantity: number; price_usd: number }[],
+    phone: string | null,
+  ) {
+    return {
       package_id: pkg.id,
       departure_id: resolved.departureId,
       hotel_departure_id: resolved.hotelDepartureId,
@@ -313,10 +339,6 @@ export class BookingService {
       deposit_usd: depositDue,
       addons_snapshot: addonsSnapshot,
       display_currency: 'USD',
-    })
-
-    await this.repo.insertBookingAddons(bookingId, addonsSnapshot)
-
-    return { ok: true as const, bookingId, totalUsd, depositUsd: depositDue }
+    }
   }
 }

@@ -288,6 +288,32 @@ describe('BookingService.submit — reserva en public.bookings (Modelo B)', () =
     )
   })
 
+  it('mapea no_availability del trigger de inventario a 409 (anti-overbooking)', async () => {
+    const { svc } = makeService({
+      packageBySlug: jest.fn().mockResolvedValue(PKG_HOTEL),
+      hotelDepartureByKey: jest.fn().mockResolvedValue(DEP_SM_SANFRAN_MAR20),
+      hotelById: jest.fn().mockResolvedValue({
+        id: 'hotel-sf', package_id: 'pkg-sm', name: 'Hotel San Francisco', meal_plan: 'PAM', is_active: true,
+      }),
+      createBooking: jest.fn().mockRejectedValue(new Error('no_availability')),
+    })
+    await expect(
+      svc.submit({
+        packageSlug: 'santa-marta-colombia',
+        travelDateIso: '2026-08-21',
+        hotelId: 'hotel-sf',
+        occupancy: 'multiple',
+        adults: 4,
+        children: 0,
+        paymentMode: 'full',
+        guestFirstName: 'Over',
+        guestLastName: 'Booking',
+        guestEmail: 'over@example.com',
+        selectedAddOnIds: [],
+      } as never),
+    ).rejects.toThrow(ConflictException)
+  })
+
   it('rechaza add-ons que no pertenecen al paquete', async () => {
     const { svc } = makeService({
       packageBySlug: jest.fn().mockResolvedValue(PKG_HOTEL),
