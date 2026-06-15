@@ -27,6 +27,16 @@ const SAFE_CODES = new Set([
   'catalog_unavailable',
   'captcha_failed',
   'service_unconfigured',
+  // Booking Modelo B (FASE 4/5)
+  'departure_not_found',
+  'ambiguous_departure',
+  'hotel_required',
+  'hotel_season_selection_required',
+  'price_not_published_multiple',
+  'price_not_published_double',
+  'price_not_published_single',
+  'no_availability',
+  'booking_create_failed',
 ])
 
 @Injectable()

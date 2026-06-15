@@ -4,45 +4,215 @@ import {
   POSTGREST_PUBLIC_SCHEMA,
   SupabaseAdminService,
 } from '../../supabase/supabase-admin.service'
+import type { CatalogMeta, PricingModel } from './domain/departure-pricing'
+
+/**
+ * Model B data access (canonical catalog/pricing/booking — see
+ * LizCo Global Tours/docs/ADR-modelo-canonico-booking.md).
+ * The legacy enterprise_tours schema is only touched for CRM customers.
+ */
 
 export type PackageRow = {
   id: string
-  base_price: number
-  duration_days: number
-  slug?: string
+  slug: string
+  name: string
+  pricing_model: PricingModel
+  nights: number
+  catalog_meta: CatalogMeta | null
+}
+
+export type StandardDepartureRow = {
+  id: string
+  package_id: string
+  departure_date: string
+  return_date: string | null
+  price_multiple_usd: number | null
+  price_double_usd: number | null
+  price_single_usd: number | null
+  season: string | null
+  price_type: string | null
+  label: string | null
+  available_spots: number | null
+  is_active: boolean
+}
+
+export type HotelDepartureRow = {
+  id: string
+  hotel_id: string
+  departure_date: string
+  return_date: string | null
+  price_multiple_usd: number | null
+  price_double_usd: number | null
+  price_single_usd: number | null
+  season: string | null
+  label: string | null
+  available_spots: number | null
+  is_active: boolean
+}
+
+export type MedellinCellRow = {
+  id: string
+  hotel_id: string
+  season: string
+  nights: number
+  price_multiple_usd: number | null
+  price_double_usd: number | null
+  is_active: boolean
+}
+
+export type HotelRow = {
+  id: string
+  package_id: string
+  name: string
+  meal_plan: string | null
+  is_active: boolean
 }
 
 @Injectable()
 export class BookingRepository {
   constructor(private readonly supa: SupabaseAdminService) {}
 
+  private get pub() {
+    return this.supa.client.schema(POSTGREST_PUBLIC_SCHEMA)
+  }
+
   async packageBySlug(slug: string): Promise<PackageRow | null> {
-    const { data, error } = await this.supa.client
-      .schema(ENTERPRISE_TOURS_SCHEMA)
-      .from('packages')
-      .select('id, base_price, duration_days, slug')
+    const { data, error } = await this.pub
+      .from('tour_packages')
+      .select('id, slug, name, pricing_model, nights, catalog_meta')
       .eq('slug', slug)
+      .eq('is_active', true)
       .maybeSingle()
     if (error) throw new Error(error.message)
     return (data as PackageRow | null) ?? null
   }
 
-  async calculatePartyTotal(input: {
-    packageId: string
-    travelDate: string
-    paxCount: number
-  }): Promise<number> {
-    const { data, error } = await this.supa.client
-      .schema(POSTGREST_PUBLIC_SCHEMA)
-      .rpc('lizco_calculate_total_price', {
-        p_package_id: input.packageId,
-        p_travel_date: input.travelDate,
-        p_pax_count: input.paxCount,
-      })
+  async standardDepartureById(id: string): Promise<StandardDepartureRow | null> {
+    const { data, error } = await this.pub
+      .from('package_departures')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle()
     if (error) throw new Error(error.message)
-    const total = Number(data)
-    if (!Number.isFinite(total)) throw new Error('pricing_unavailable')
-    return total
+    return (data as StandardDepartureRow | null) ?? null
+  }
+
+  async standardDeparturesByDate(packageId: string, date: string): Promise<StandardDepartureRow[]> {
+    const { data, error } = await this.pub
+      .from('package_departures')
+      .select('*')
+      .eq('package_id', packageId)
+      .eq('departure_date', date)
+      .eq('is_active', true)
+    if (error) throw new Error(error.message)
+    return (data ?? []) as StandardDepartureRow[]
+  }
+
+  async hotelDepartureById(id: string): Promise<HotelDepartureRow | null> {
+    const { data, error } = await this.pub
+      .from('hotel_departures')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle()
+    if (error) throw new Error(error.message)
+    return (data as HotelDepartureRow | null) ?? null
+  }
+
+  async hotelDepartureByKey(hotelId: string, date: string): Promise<HotelDepartureRow | null> {
+    const { data, error } = await this.pub
+      .from('hotel_departures')
+      .select('*')
+      .eq('hotel_id', hotelId)
+      .eq('departure_date', date)
+      .eq('is_active', true)
+      .maybeSingle()
+    if (error) throw new Error(error.message)
+    return (data as HotelDepartureRow | null) ?? null
+  }
+
+  async medellinCellById(id: string): Promise<MedellinCellRow | null> {
+    const { data, error } = await this.pub
+      .from('medellin_price_grid')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle()
+    if (error) throw new Error(error.message)
+    return (data as MedellinCellRow | null) ?? null
+  }
+
+  async medellinCellByKey(hotelId: string, season: string, nights: number): Promise<MedellinCellRow | null> {
+    const { data, error } = await this.pub
+      .from('medellin_price_grid')
+      .select('*')
+      .eq('hotel_id', hotelId)
+      .eq('season', season)
+      .eq('nights', nights)
+      .eq('is_active', true)
+      .maybeSingle()
+    if (error) throw new Error(error.message)
+    return (data as MedellinCellRow | null) ?? null
+  }
+
+  async hotelById(id: string): Promise<HotelRow | null> {
+    const { data, error } = await this.pub
+      .from('package_hotels')
+      .select('id, package_id, name, meal_plan, is_active')
+      .eq('id', id)
+      .maybeSingle()
+    if (error) throw new Error(error.message)
+    return (data as HotelRow | null) ?? null
+  }
+
+  async createBooking(row: {
+    package_id: string
+    departure_id: string | null
+    hotel_departure_id: string | null
+    hotel_id: string | null
+    room_type: string
+    medellin_nights: number | null
+    adults: number
+    children_ages: number[]
+    guest_name: string
+    guest_email: string
+    guest_phone: string | null
+    guest_country: string | null
+    special_requests: string | null
+    total_usd: number
+    payment_mode: string
+    deposit_usd: number | null
+    addons_snapshot: { id: string; name: string; quantity: number; price_usd: number }[]
+    display_currency: string
+  }): Promise<string> {
+    const { data, error } = await this.pub
+      .from('bookings')
+      .insert({ ...row, status: 'pending' })
+      .select('id')
+      .single()
+    if (error || !data) throw new Error(error?.message ?? 'booking_create_failed')
+    return (data as { id: string }).id
+  }
+
+  /**
+   * Persists relational add-on rows for ids that exist in public.package_addons.
+   * Legacy catalog ids ("A1"…) only live in addons_snapshot — non-fatal.
+   */
+  async insertBookingAddons(
+    bookingId: string,
+    addOns: { id: string; quantity: number; price_usd: number }[],
+  ): Promise<void> {
+    const uuidLike = addOns.filter((a) => /^[0-9a-f-]{36}$/i.test(a.id))
+    if (!uuidLike.length) return
+    const { data: known, error: qErr } = await this.pub
+      .from('package_addons')
+      .select('id')
+      .in('id', uuidLike.map((a) => a.id))
+    if (qErr) return
+    const knownSet = new Set((known ?? []).map((r: { id: string }) => r.id))
+    const rows = uuidLike
+      .filter((a) => knownSet.has(a.id))
+      .map((a) => ({ booking_id: bookingId, addon_id: a.id, quantity: a.quantity, price_usd: a.price_usd }))
+    if (!rows.length) return
+    await this.pub.from('booking_addons').insert(rows)
   }
 
   async upsertCustomer(input: {
@@ -77,33 +247,5 @@ export class BookingRepository {
 
     if (updateErr || !existing) throw new Error(updateErr?.message ?? 'customer_upsert_failed')
     return (existing as { id: string }).id
-  }
-
-  async createBookingWithAddOns(input: {
-    package_id: string
-    customer_id: string
-    travel_date: string
-    travelers_count: number
-    base_price_applied: number
-    season_multiplier_applied: number
-    total_calculated_price: number
-    addOns: { id: string; quantity: number; price: number }[]
-  }): Promise<string> {
-    const { data, error } = await this.supa.client
-      .schema(POSTGREST_PUBLIC_SCHEMA)
-      .rpc('lizco_create_booking', {
-        p_package_id:       input.package_id,
-        p_customer_id:      input.customer_id,
-        p_travel_date:      input.travel_date,
-        p_travelers_count:  input.travelers_count,
-        p_base_price:       input.base_price_applied,
-        p_multiplier:       input.season_multiplier_applied,
-        p_total_price:      input.total_calculated_price,
-        p_addon_ids:        input.addOns.map((a) => a.id),
-        p_addon_quantities: input.addOns.map((a) => a.quantity),
-        p_addon_prices:     input.addOns.map((a) => a.price),
-      })
-    if (error || !data) throw new Error(error?.message ?? 'booking_create_failed')
-    return data as string
   }
 }
