@@ -84,9 +84,10 @@ let CatalogRepository = class CatalogRepository {
         const { data, error } = await this.supa.client
             .schema(supabase_admin_service_1.ENTERPRISE_TOURS_SCHEMA)
             .from('blogs')
-            .select('slug, title, excerpt, published_at')
-            .eq('is_active', true)
-            .order('published_at', { ascending: false });
+            .select('slug, title, excerpt:meta_description, published_at:created_at')
+            .eq('status', 'published')
+            .is('deleted_at', null)
+            .order('created_at', { ascending: false });
         if (error)
             throw new Error(error.message);
         return (data ?? []);
@@ -95,9 +96,10 @@ let CatalogRepository = class CatalogRepository {
         const { data, error } = await this.supa.client
             .schema(supabase_admin_service_1.ENTERPRISE_TOURS_SCHEMA)
             .from('blogs')
-            .select('slug, title, excerpt, body, published_at')
+            .select('slug, title, excerpt:meta_description, body:content, published_at:created_at')
             .eq('slug', slug)
-            .eq('is_active', true)
+            .eq('status', 'published')
+            .is('deleted_at', null)
             .maybeSingle();
         if (error)
             throw new Error(error.message);
