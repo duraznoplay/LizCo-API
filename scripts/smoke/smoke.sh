@@ -8,6 +8,11 @@
 #   LIZCO_API_REQUEST_PUBKEY_FILE=.jwe-pub.json API=http://localhost:4000 bash scripts/smoke/smoke.sh
 
 set -euo pipefail
+
+# Git Bash (MSYS) convierte argumentos /v1/... en rutas de Windows, lo que
+# rompe la verificación path-bound del JWE. Excluir solo ese prefijo deja
+# intacta la conversión de /dev/null.
+export MSYS2_ARG_CONV_EXCL="${MSYS2_ARG_CONV_EXCL:-/v1}"
 : "${API:?set API base url, e.g. http://localhost:4000}"
 
 MINT() { node scripts/smoke/mint.mjs "$@"; }
@@ -27,7 +32,7 @@ echo '== 3. GET /v1/catalog/packages CON token válido =='
 TOK=$(MINT GET /v1/catalog/packages)
 res=$(curl -fsS -H "X-LizCo-Request-Token: $TOK" "$API/v1/catalog/packages" || true)
 echo "   $res" | head -c 200; echo
-printf '%s' "$res" | grep -q '"ok":true' && PASS "catalog read" || FAIL "catalog read"
+printf '%s' "$res" | grep -q '"items"' && PASS "catalog read" || FAIL "catalog read"
 
 echo '== 4. POST /v1/contact con bodyHash inválido (mint sin body, envío con body) =='
 TOK=$(MINT POST /v1/contact)
@@ -64,12 +69,18 @@ code=$(curl -s -o /dev/null -w '%{http_code}' -X POST -H "Content-Type: applicat
 echo '== 9. GET /v1/catalog/destinations CON token =='
 TOK=$(MINT GET /v1/catalog/destinations)
 res=$(curl -fsS -H "X-LizCo-Request-Token: $TOK" "$API/v1/catalog/destinations" || true)
-printf '%s' "$res" | grep -q '"ok":true' && PASS "catalog destinations" || FAIL "catalog destinations"
+printf '%s' "$res" | grep -q '"items"' && PASS "catalog destinations" || FAIL "catalog destinations"
 
 echo '== 10. GET /v1/catalog/blogs CON token =='
 TOK=$(MINT GET /v1/catalog/blogs)
 res=$(curl -fsS -H "X-LizCo-Request-Token: $TOK" "$API/v1/catalog/blogs" || true)
-printf '%s' "$res" | grep -q '"ok":true' && PASS "catalog blogs" || FAIL "catalog blogs"
+printf '%s' "$res" | grep -q '"items"' && PASS "catalog blogs" || FAIL "catalog blogs"
+
+echo '== 11. GET /v1/booking/quote — precio exacto del tarifario (Modelo B) =='
+TOK=$(MINT GET /v1/booking/quote)
+res=$(curl -fsS -H "X-LizCo-Request-Token: $TOK"   "$API/v1/booking/quote?packageSlug=santa-marta-colombia&date=2026-08-21&hotelId=b1000002-0000-0000-0000-000000000001&occupancy=multiple&adults=1" || true)
+echo "   $res" | head -c 200; echo
+printf '%s' "$res" | grep -q '"perAdultUsd":455' && PASS "quote tarifario (455 USD)" || FAIL "quote tarifario"
 
 echo ''
 printf '\033[32m PASS all smoke checks\033[0m\n'

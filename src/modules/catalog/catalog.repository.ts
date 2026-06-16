@@ -78,33 +78,109 @@ export class CatalogRepository {
       .schema(ENTERPRISE_TOURS_SCHEMA)
       .from('add_ons')
       .select('id, name, type, price, is_active')
-      .eq('is_active', true)
       .order('name', { ascending: true })
     if (error) throw new Error(error.message)
     return (data as AddOnRow[]) ?? []
   }
 
+  // Live blogs schema: title, slug, content, meta_description, status,
+  // deleted_at, created_at (no excerpt/body/published_at/is_active columns).
+  // The public contract keeps its field names via PostgREST aliases.
   async listBlogs(): Promise<BlogPublicListItem[]> {
     const { data, error } = await this.supa.client
       .schema(ENTERPRISE_TOURS_SCHEMA)
       .from('blogs')
-      .select('slug, title, excerpt, published_at')
-      .eq('is_active', true)
-      .order('published_at', { ascending: false })
+      .select('slug, title, excerpt:meta_description, published_at:created_at')
+      .eq('status', 'published')
+      .is('deleted_at', null)
+      .order('created_at', { ascending: false })
     if (error) throw new Error(error.message)
-    return (data ?? []) as BlogPublicListItem[]
+    return (data ?? []) as unknown as BlogPublicListItem[]
   }
 
   async blogBySlug(slug: string): Promise<BlogPublicDetail | null> {
     const { data, error } = await this.supa.client
       .schema(ENTERPRISE_TOURS_SCHEMA)
       .from('blogs')
-      .select('slug, title, excerpt, body, published_at')
+      .select('slug, title, excerpt:meta_description, body:content, published_at:created_at')
       .eq('slug', slug)
-      .eq('is_active', true)
+      .eq('status', 'published')
+      .is('deleted_at', null)
       .maybeSingle()
     if (error) throw new Error(error.message)
-    return (data as BlogPublicDetail | null) ?? null
+    return (data as unknown as BlogPublicDetail | null) ?? null
+  }
+
+  async createAddOn(dto: {
+    id: string
+    name: string
+    type: string
+    price: number
+    is_active: boolean
+  }): Promise<AddOnRow> {
+    const { data, error } = await this.supa.client
+      .schema(ENTERPRISE_TOURS_SCHEMA)
+      .from('add_ons')
+      .insert([dto])
+      .select('id, name, type, price, is_active')
+      .single()
+    if (error) throw new Error(error.message)
+    return data as AddOnRow
+  }
+
+  async updateAddOn(
+    id: string,
+    dto: {
+      name?: string
+      type?: string
+      price?: number
+      is_active?: boolean
+    },
+  ): Promise<AddOnRow> {
+    const { data, error } = await this.supa.client
+      .schema(ENTERPRISE_TOURS_SCHEMA)
+      .from('add_ons')
+      .update(dto)
+      .eq('id', id)
+      .select('id, name, type, price, is_active')
+      .single()
+    if (error) throw new Error(error.message)
+    return data as AddOnRow
+  }
+
+  async deleteAddOn(id: string): Promise<void> {
+    const { error } = await this.supa.client
+      .schema(ENTERPRISE_TOURS_SCHEMA)
+      .from('add_ons')
+      .delete()
+      .eq('id', id)
+    if (error) throw new Error(error.message)
+  }
+
+  async getAddOnDependencies(
+    id: string,
+  ): Promise<{ id: string; name: string; slug: string }[]> {
+    const { data, error } = await this.supa.client
+      .schema(ENTERPRISE_TOURS_SCHEMA)
+      .from('package_add_ons')
+      .select('packages(id, name, slug)')
+      .eq('add_on_id', id)
+    if (error) throw new Error(error.message)
+
+    const packages: { id: string; name: string; slug: string }[] = []
+    if (data && Array.isArray(data)) {
+      for (const row of data) {
+        const pkg = (row as any).packages
+        if (pkg && !Array.isArray(pkg)) {
+          packages.push({
+            id: pkg.id,
+            name: pkg.name,
+            slug: pkg.slug,
+          })
+        }
+      }
+    }
+    return packages
   }
 
   private flattenEmbeddedAddOns(rows: { add_ons: AddOnRow | AddOnRow[] | null }[]): AddOnRow[] {

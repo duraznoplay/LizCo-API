@@ -28,33 +28,40 @@ let RequestTokenService = RequestTokenService_1 = class RequestTokenService {
     }
     async verify(opts) {
         const { token, method, path, rawBody } = opts;
-        const { payload, protectedHeader } = await (0, jose_1.jwtDecrypt)(token, async (header) => {
-            const entry = this.keyRing.findByKid(header.kid);
-            if (!entry)
-                throw new Error('unknown_kid');
-            return entry.key;
-        }, {
-            issuer: 'lizco-web',
-            audience: 'lizco-api',
-            clockTolerance: 5,
-        });
-        if (protectedHeader.alg !== 'ECDH-ES' || protectedHeader.enc !== 'A256GCM') {
-            throw new Error('bad_alg');
+        try {
+            const { payload, protectedHeader } = await (0, jose_1.jwtDecrypt)(token, async (header) => {
+                const entry = this.keyRing.findByKid(header.kid);
+                if (!entry)
+                    throw new Error('unknown_kid');
+                return entry.key;
+            }, {
+                issuer: 'lizco-web',
+                audience: 'lizco-api',
+                clockTolerance: 5,
+            });
+            if (protectedHeader.alg !== 'ECDH-ES' || protectedHeader.enc !== 'A256GCM') {
+                throw new Error('bad_alg');
+            }
+            if (payload.method !== method)
+                throw new Error('method_mismatch');
+            if (payload.path !== path)
+                throw new Error('path_mismatch');
+            const computed = (0, node_crypto_1.createHash)('sha256').update(rawBody).digest('hex');
+            if (payload.bodyHash !== computed)
+                throw new Error('body_hash_mismatch');
+            const jti = payload.jti;
+            if (!jti)
+                throw new Error('missing_jti');
+            if (this.seenJti.has(jti))
+                throw new Error('replay');
+            this.seenJti.set(jti, Date.now());
+            return payload;
         }
-        if (payload.method !== method)
-            throw new Error('method_mismatch');
-        if (payload.path !== path)
-            throw new Error('path_mismatch');
-        const computed = (0, node_crypto_1.createHash)('sha256').update(rawBody).digest('hex');
-        if (payload.bodyHash !== computed)
-            throw new Error('body_hash_mismatch');
-        const jti = payload.jti;
-        if (!jti)
-            throw new Error('missing_jti');
-        if (this.seenJti.has(jti))
-            throw new Error('replay');
-        this.seenJti.set(jti, Date.now());
-        return payload;
+        catch (err) {
+            const errMsg = err instanceof Error ? err.message : String(err);
+            this.log.error(`Token verification failed: ${errMsg}`);
+            throw err;
+        }
     }
 };
 exports.RequestTokenService = RequestTokenService;
