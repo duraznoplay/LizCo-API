@@ -104,7 +104,7 @@ let CatalogService = class CatalogService {
                 payload.is_active = dto.is_active;
             return await this.repo.updateAddOn(id, payload);
         }
-        catch (error) {
+        catch {
             throw new common_1.ServiceUnavailableException('catalog_unavailable');
         }
     }
