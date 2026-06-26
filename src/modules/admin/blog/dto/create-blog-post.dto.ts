@@ -56,4 +56,24 @@ export class CreateBlogPostDto {
   @IsOptional()
   @IsBoolean()
   featured?: boolean = false
+
+  @nullToUndef()
+  @IsOptional()
+  @IsString()
+  title_en?: string
+
+  @nullToUndef()
+  @IsOptional()
+  @IsString()
+  title_fr?: string
+
+  @nullToUndef()
+  @IsOptional()
+  @IsString()
+  content_en?: string
+
+  @nullToUndef()
+  @IsOptional()
+  @IsString()
+  content_fr?: string
 }
