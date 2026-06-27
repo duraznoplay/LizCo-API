@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common'
 import { ENTERPRISE_TOURS_SCHEMA, SupabaseAdminService } from '../../../supabase/supabase-admin.service'
 import type { BlogQueryDto } from './dto/blog-query.dto'
 import { pgError } from '../../../common/utils/pg-error'
-import type { BlogAdminRow, BlogAdminListItem } from '@/types/db.types'
+import type { BlogAdminListItem } from '@/types/db.types'
 import { BlogStatus } from './dto/blog-status.enum'
 import type { BlogPostEntity } from './entities/blog-post.entity'
 
@@ -100,6 +100,10 @@ export class BlogAdminRepository {
       featured: boolean
       reading_time_minutes: number
       updated_by: string
+      title_en: string
+      title_fr: string
+      content_en: string
+      content_fr: string
     }>,
   ): Promise<BlogPostEntity | null> {
     const { data: row, error } = await this.client
