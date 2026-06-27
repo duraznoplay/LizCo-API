@@ -1,4 +1,4 @@
-import { ConflictException, ServiceUnavailableException } from '@nestjs/common'
+import { ConflictException } from '@nestjs/common'
 import { Test } from '@nestjs/testing'
 import { CatalogRepository } from './catalog.repository'
 import { CatalogService } from './catalog.service'

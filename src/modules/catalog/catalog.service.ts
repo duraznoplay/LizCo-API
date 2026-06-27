@@ -95,7 +95,7 @@ export class CatalogService {
       if (dto.is_active !== undefined) payload.is_active = dto.is_active
 
       return await this.repo.updateAddOn(id, payload)
-    } catch (error) {
+    } catch {
       throw new ServiceUnavailableException('catalog_unavailable')
     }
   }

@@ -23,6 +23,10 @@ class CreateBlogPostDto {
     meta_description;
     meta_keywords;
     featured = false;
+    title_en;
+    title_fr;
+    content_en;
+    content_fr;
 }
 exports.CreateBlogPostDto = CreateBlogPostDto;
 __decorate([
@@ -75,4 +79,28 @@ __decorate([
     (0, class_validator_1.IsBoolean)(),
     __metadata("design:type", Boolean)
 ], CreateBlogPostDto.prototype, "featured", void 0);
+__decorate([
+    nullToUndef(),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateBlogPostDto.prototype, "title_en", void 0);
+__decorate([
+    nullToUndef(),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateBlogPostDto.prototype, "title_fr", void 0);
+__decorate([
+    nullToUndef(),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateBlogPostDto.prototype, "content_en", void 0);
+__decorate([
+    nullToUndef(),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateBlogPostDto.prototype, "content_fr", void 0);
 //# sourceMappingURL=create-blog-post.dto.js.map
