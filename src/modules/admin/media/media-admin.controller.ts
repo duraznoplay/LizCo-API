@@ -11,11 +11,11 @@ import { createMediaSchema, presignedUrlSchema, updateMediaSchema } from '../../
 
 @Controller('admin/media')
 @UseGuards(JwtAdminGuard, RolesGuard)
-@Roles('ADMIN', 'STAFF')
 export class MediaAdminController {
   constructor(private readonly mediaService: MediaService) {}
 
   @Get('s3')
+  @Roles('ADMIN', 'STAFF')
   async listFromS3(
     @Query('section') section?: string,
     @Query('slug') slug?: string,
@@ -34,6 +34,7 @@ export class MediaAdminController {
   }
 
   @Get()
+  @Roles('ADMIN', 'STAFF')
   async list(
     @Query('section') section?: string,
     @Query('slug') slug?: string,
@@ -73,6 +74,7 @@ export class MediaAdminController {
   }
 
   @Get(':id')
+  @Roles('ADMIN', 'STAFF')
   async getById(@Param('id') id: string): Promise<MediaDetailDto> {
     const metadata = await this.mediaService.getMetadata(id)
     if (!metadata) throw new NotFoundException('media_not_found')
@@ -96,6 +98,7 @@ export class MediaAdminController {
   }
 
   @Post('presigned-url')
+  @Roles('ADMIN')
   async generatePresignedUrl(
     @Body(new ZodValidationPipe(presignedUrlSchema)) body: PresignedUrlRequestDto,
   ) {
@@ -103,6 +106,7 @@ export class MediaAdminController {
   }
 
   @Post('upload')
+  @Roles('ADMIN')
   @SkipRequestToken()
   @UseInterceptors(FileInterceptor('file'))
   async uploadFile(
@@ -126,6 +130,7 @@ export class MediaAdminController {
   }
 
   @Post()
+  @Roles('ADMIN')
   async create(
     @Body(new ZodValidationPipe(createMediaSchema)) _body: CreateMediaDto,
   ): Promise<MediaDetailDto> {
@@ -136,6 +141,7 @@ export class MediaAdminController {
   }
 
   @Patch(':id')
+  @Roles('ADMIN')
   async update(
     @Param('id') id: string,
     @Body(new ZodValidationPipe(updateMediaSchema.partial())) body: UpdateMediaDto,
@@ -162,6 +168,7 @@ export class MediaAdminController {
   }
 
   @Delete(':id')
+  @Roles('ADMIN')
   async delete(@Param('id') id: string): Promise<{ success: true }> {
     const metadata = await this.mediaService.getMetadata(id)
     if (!metadata) throw new NotFoundException('media_not_found')
@@ -171,6 +178,7 @@ export class MediaAdminController {
   }
 
   @Post('register-upload')
+  @Roles('ADMIN')
   async registerUpload(
     @Body() body: { s3_key: string } & CreateMediaDto,
   ): Promise<MediaDetailDto> {
