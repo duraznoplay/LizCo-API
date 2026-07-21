@@ -28,7 +28,6 @@ const catalog_module_1 = require("./modules/catalog/catalog.module");
 const contact_module_1 = require("./modules/contact/contact.module");
 const health_module_1 = require("./modules/health/health.module");
 const media_module_1 = require("./modules/media/media.module");
-const seed_module_1 = require("./modules/seed/seed.module");
 const supabase_module_1 = require("./supabase/supabase.module");
 let AppModule = class AppModule {
 };
@@ -68,7 +67,6 @@ exports.AppModule = AppModule = __decorate([
             assistant_module_1.AssistantModule,
             admin_module_1.AdminModule,
             media_module_1.MediaModule,
-            seed_module_1.SeedModule,
             users_module_1.UsersModule,
             auth_module_2.BackofficeAuthModule,
             packages_admin_module_1.PackagesAdminModule,

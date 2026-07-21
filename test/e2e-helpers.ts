@@ -13,6 +13,9 @@ export interface E2EContext {
   adminToken: string
 }
 
+const E2E_TEST_ADMIN_EMAIL = process.env.E2E_TEST_ADMIN_EMAIL
+const E2E_TEST_ADMIN_PASSWORD = process.env.E2E_TEST_ADMIN_PASSWORD
+
 export async function createE2EContext(): Promise<E2EContext> {
   const { AppModule } = await import('../src/app.module')
 
@@ -37,7 +40,7 @@ export async function createE2EContext(): Promise<E2EContext> {
 
   const loginRes = await superReq
     .post('/v1/auth/login')
-    .send({ email: process.env.ADMIN_EMAIL, password: process.env.ADMIN_PASSWORD })
+    .send({ email: E2E_TEST_ADMIN_EMAIL, password: E2E_TEST_ADMIN_PASSWORD })
 
   const adminToken: string = loginRes.body?.accessToken ?? ''
 

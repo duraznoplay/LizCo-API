@@ -1,11 +1,11 @@
 /**
  * Backoffice E2E — requires real Supabase + seeded admin user.
- * Set ADMIN_EMAIL + ADMIN_PASSWORD in the environment to run.
+ * Set E2E_TEST_ADMIN_EMAIL + E2E_TEST_ADMIN_PASSWORD in the environment to run.
  * Skips automatically when credentials are absent.
  */
 import { createE2EContext, E2EContext } from './e2e-helpers'
 
-const SKIP = !process.env.ADMIN_EMAIL || !process.env.ADMIN_PASSWORD
+const SKIP = !process.env.E2E_TEST_ADMIN_EMAIL || !process.env.E2E_TEST_ADMIN_PASSWORD
 
 const describeE2E = SKIP ? describe.skip : describe
 
@@ -15,7 +15,7 @@ describeE2E('Backoffice E2E', () => {
   beforeAll(async () => {
     ctx = await createE2EContext()
     if (!ctx.adminToken) {
-      throw new Error('E2E setup: login failed — check ADMIN_EMAIL / ADMIN_PASSWORD and Supabase seed')
+      throw new Error('E2E setup: login failed — check E2E_TEST_ADMIN_EMAIL / E2E_TEST_ADMIN_PASSWORD and Supabase seed')
     }
   }, 30_000)
 
@@ -61,19 +61,19 @@ describeE2E('Backoffice E2E', () => {
     it('POST /v1/auth/login — valid credentials → 200 + accessToken', async () => {
       const res = await ctx.req
         .post('/v1/auth/login')
-        .send({ email: process.env.ADMIN_EMAIL, password: process.env.ADMIN_PASSWORD })
+        .send({ email: process.env.E2E_TEST_ADMIN_EMAIL, password: process.env.E2E_TEST_ADMIN_PASSWORD })
         .expect(200)
 
       expect(res.body.ok).toBe(true)
       expect(typeof res.body.accessToken).toBe('string')
-      expect(res.body.user.email).toBe(process.env.ADMIN_EMAIL)
+      expect(res.body.user.email).toBe(process.env.E2E_TEST_ADMIN_EMAIL)
       expect(res.body.user.password).toBeUndefined()
     })
 
     it('POST /v1/auth/login — wrong password → 401 invalid_credentials', async () => {
       const res = await ctx.req
         .post('/v1/auth/login')
-        .send({ email: process.env.ADMIN_EMAIL, password: 'definitely_wrong_password' })
+        .send({ email: process.env.E2E_TEST_ADMIN_EMAIL, password: 'definitely_wrong_password' })
         .expect(401)
 
       expect(res.body.error).toBe('invalid_credentials')
