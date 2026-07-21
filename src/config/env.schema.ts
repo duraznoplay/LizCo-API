@@ -15,9 +15,6 @@ export const envSchema = z.object({
   HCAPTCHA_SECRET: z.string().optional().or(z.literal('')),
   REDIS_URL: z.string().url().optional().or(z.literal('')),
 
-  ADMIN_EMAIL: z.string().email().optional(),
-  ADMIN_PASSWORD: z.string().min(12).optional(),
-
   JWT_ADMIN_SECRET: z.string().min(32),
   JWT_ADMIN_EXPIRES_IN: z.string().default('8h'),
 

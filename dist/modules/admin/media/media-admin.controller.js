@@ -158,6 +158,7 @@ let MediaAdminController = class MediaAdminController {
 exports.MediaAdminController = MediaAdminController;
 __decorate([
     (0, common_1.Get)('s3'),
+    (0, roles_decorator_1.Roles)('ADMIN', 'STAFF'),
     __param(0, (0, common_1.Query)('section')),
     __param(1, (0, common_1.Query)('slug')),
     __param(2, (0, common_1.Query)('variant')),
@@ -169,6 +170,7 @@ __decorate([
 ], MediaAdminController.prototype, "listFromS3", null);
 __decorate([
     (0, common_1.Get)(),
+    (0, roles_decorator_1.Roles)('ADMIN', 'STAFF'),
     __param(0, (0, common_1.Query)('section')),
     __param(1, (0, common_1.Query)('slug')),
     __param(2, (0, common_1.Query)('variant')),
@@ -180,6 +182,7 @@ __decorate([
 ], MediaAdminController.prototype, "list", null);
 __decorate([
     (0, common_1.Get)(':id'),
+    (0, roles_decorator_1.Roles)('ADMIN', 'STAFF'),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
@@ -187,6 +190,7 @@ __decorate([
 ], MediaAdminController.prototype, "getById", null);
 __decorate([
     (0, common_1.Post)('presigned-url'),
+    (0, roles_decorator_1.Roles)('ADMIN'),
     __param(0, (0, common_1.Body)(new zod_pipe_1.ZodValidationPipe(media_admin_dto_1.presignedUrlSchema))),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
@@ -194,6 +198,7 @@ __decorate([
 ], MediaAdminController.prototype, "generatePresignedUrl", null);
 __decorate([
     (0, common_1.Post)('upload'),
+    (0, roles_decorator_1.Roles)('ADMIN'),
     (0, skip_request_token_decorator_1.SkipRequestToken)(),
     (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('file')),
     __param(0, (0, common_1.UploadedFile)()),
@@ -204,6 +209,7 @@ __decorate([
 ], MediaAdminController.prototype, "uploadFile", null);
 __decorate([
     (0, common_1.Post)(),
+    (0, roles_decorator_1.Roles)('ADMIN'),
     __param(0, (0, common_1.Body)(new zod_pipe_1.ZodValidationPipe(media_admin_dto_1.createMediaSchema))),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
@@ -211,6 +217,7 @@ __decorate([
 ], MediaAdminController.prototype, "create", null);
 __decorate([
     (0, common_1.Patch)(':id'),
+    (0, roles_decorator_1.Roles)('ADMIN'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)(new zod_pipe_1.ZodValidationPipe(media_admin_dto_1.updateMediaSchema.partial()))),
     __metadata("design:type", Function),
@@ -219,6 +226,7 @@ __decorate([
 ], MediaAdminController.prototype, "update", null);
 __decorate([
     (0, common_1.Delete)(':id'),
+    (0, roles_decorator_1.Roles)('ADMIN'),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
@@ -226,6 +234,7 @@ __decorate([
 ], MediaAdminController.prototype, "delete", null);
 __decorate([
     (0, common_1.Post)('register-upload'),
+    (0, roles_decorator_1.Roles)('ADMIN'),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
@@ -234,7 +243,6 @@ __decorate([
 exports.MediaAdminController = MediaAdminController = __decorate([
     (0, common_1.Controller)('admin/media'),
     (0, common_1.UseGuards)(jwt_admin_guard_1.JwtAdminGuard, roles_guard_1.RolesGuard),
-    (0, roles_decorator_1.Roles)('ADMIN', 'STAFF'),
     __metadata("design:paramtypes", [media_service_1.MediaService])
 ], MediaAdminController);
 //# sourceMappingURL=media-admin.controller.js.map

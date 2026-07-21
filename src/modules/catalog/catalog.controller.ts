@@ -1,6 +1,9 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common'
+import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common'
 import { Throttle } from '@nestjs/throttler'
 
+import { Roles } from '../../common/decorators/roles.decorator'
+import { JwtAdminGuard } from '../../common/guards/jwt-admin.guard'
+import { RolesGuard } from '../../common/guards/roles.guard'
 import { CatalogService } from './catalog.service'
 import { CreateAddOnDto } from './dto/create-addon.dto'
 import { UpdateAddOnDto } from './dto/update-addon.dto'
@@ -47,18 +50,24 @@ export class CatalogController {
 
   @Post('add-ons')
   @Throttle({ default: { limit: 30, ttl: 60_000 } })
+  @UseGuards(JwtAdminGuard, RolesGuard)
+  @Roles('ADMIN')
   createAddOn(@Body() dto: CreateAddOnDto) {
     return this.catalog.createAddOn(dto)
   }
 
   @Patch('add-ons/:id')
   @Throttle({ default: { limit: 30, ttl: 60_000 } })
+  @UseGuards(JwtAdminGuard, RolesGuard)
+  @Roles('ADMIN')
   updateAddOn(@Param('id') id: string, @Body() dto: UpdateAddOnDto) {
     return this.catalog.updateAddOn(id, dto)
   }
 
   @Delete('add-ons/:id')
   @Throttle({ default: { limit: 30, ttl: 60_000 } })
+  @UseGuards(JwtAdminGuard, RolesGuard)
+  @Roles('ADMIN')
   deleteAddOn(@Param('id') id: string) {
     return this.catalog.deleteAddOn(id)
   }

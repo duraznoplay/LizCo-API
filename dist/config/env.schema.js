@@ -14,8 +14,6 @@ exports.envSchema = zod_1.z.object({
     LIZCO_API_REQUEST_PRIVKEY_JWK_PREV: zod_1.z.string().optional().or(zod_1.z.literal('')),
     HCAPTCHA_SECRET: zod_1.z.string().optional().or(zod_1.z.literal('')),
     REDIS_URL: zod_1.z.string().url().optional().or(zod_1.z.literal('')),
-    ADMIN_EMAIL: zod_1.z.string().email().optional(),
-    ADMIN_PASSWORD: zod_1.z.string().min(12).optional(),
     JWT_ADMIN_SECRET: zod_1.z.string().min(32),
     JWT_ADMIN_EXPIRES_IN: zod_1.z.string().default('8h'),
     AWS_REGION: zod_1.z.string().min(1).optional(),

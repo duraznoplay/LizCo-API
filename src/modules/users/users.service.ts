@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common'
 import {
-  ENTERPRISE_TOURS_SCHEMA,
+  POSTGREST_PUBLIC_SCHEMA,
   SupabaseAdminService,
 } from '../../supabase/supabase-admin.service'
 
@@ -20,7 +20,7 @@ export class UsersService {
 
   async findByEmail(email: string): Promise<AdminUser | null> {
     const { data, error } = await this.supabase.client
-      .schema(ENTERPRISE_TOURS_SCHEMA)
+      .schema(POSTGREST_PUBLIC_SCHEMA)
       .from('users')
       .select('id, email, password, role, created_at')
       .eq('email', email.toLowerCase().trim())

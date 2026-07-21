@@ -19,7 +19,7 @@ let UsersService = class UsersService {
     }
     async findByEmail(email) {
         const { data, error } = await this.supabase.client
-            .schema(supabase_admin_service_1.ENTERPRISE_TOURS_SCHEMA)
+            .schema(supabase_admin_service_1.POSTGREST_PUBLIC_SCHEMA)
             .from('users')
             .select('id, email, password, role, created_at')
             .eq('email', email.toLowerCase().trim())

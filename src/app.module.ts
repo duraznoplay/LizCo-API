@@ -20,7 +20,6 @@ import { CatalogModule } from './modules/catalog/catalog.module'
 import { ContactModule } from './modules/contact/contact.module'
 import { HealthModule } from './modules/health/health.module'
 import { MediaModule } from './modules/media/media.module'
-import { SeedModule } from './modules/seed/seed.module'
 import { SupabaseModule } from './supabase/supabase.module'
 
 @Module({
@@ -58,7 +57,6 @@ import { SupabaseModule } from './supabase/supabase.module'
     AssistantModule,
     AdminModule,
     MediaModule,
-    SeedModule,
     UsersModule,
     BackofficeAuthModule,
     PackagesAdminModule,
