@@ -68,3 +68,4 @@ API=http://localhost:4000 \
 - Web Service Node 20, build `yarn build`, start `yarn start:prod`.
 - Health check path `/health`.
 - Env: todas las vars de `.env.example` con valores reales.
+ 
